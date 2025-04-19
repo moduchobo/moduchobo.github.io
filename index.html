@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>포션 제작 이득 계산기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <h1>🧪 포션 제작 이득 계산기</h1>
+
+  <label>포션 1회 제작 시 나오는 포션 개수:
+    <input type="number" id="outputCount" placeholder="예: 10">
+  </label><br><br>
+
+  <label>포션 1개당 평균 판매 가격:
+    <input type="number" id="potionPrice" placeholder="예: 3000">
+  </label><br><br>
+
+  <label>목표 마진율 (%) :
+    <input type="number" id="marginRate" placeholder="예: 20">
+  </label><br><br>
+
+  <button onclick="calculate()">이득 보기 위한 최대 원재료 비용 계산</button>
+
+  <h2 id="result"></h2>
+
+  <script>
+    function calculate() {
+      const outputCount = parseFloat(document.getElementById("outputCount").value);
+      const potionPrice = parseFloat(document.getElementById("potionPrice").value);
+      const marginRate = parseFloat(document.getElementById("marginRate").value);
+
+      if (isNaN(outputCount) || isNaN(potionPrice) || isNaN(marginRate)) {
+        document.getElementById("result").innerText = "모든 값을 올바르게 입력해주세요.";
+        return;
+      }
+
+      const totalSellValue = potionPrice * outputCount;
+      const maxCost = totalSellValue / (1 + marginRate / 100);
+
+      document.getElementById("result").innerText = 
+        `💰 원재료 비용이 ${Math.floor(maxCost).toLocaleString()} 메소 이하이면 이득이에요!`;
+    }
+  </script>
+</body>
+</html>
