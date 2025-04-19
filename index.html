@@ -25,7 +25,15 @@
     <input type="number" id="failRate" placeholder="예: 10 (0~100)">
   </label><br><br>
 
-  <button onclick="calculate()">이득 보기 위한 최대 원재료 비용 계산</button>
+  <label>원재료 개수:
+    <input type="number" id="ingredientCount" placeholder="예: 5">
+  </label><br><br>
+
+  <label>1회 제작 시 고정비용 (선택):
+    <input type="number" id="fixedCost" placeholder="예: 2000 (없으면 0)">
+  </label><br><br>
+
+  <button onclick="calculate()">이득 보기 위한 '1개당 원재료 가격' 계산</button>
 
   <h2 id="result"></h2>
 
@@ -39,46 +47,55 @@
       const potionPrice = parseFloat(document.getElementById("potionPrice").value);
       const marginRate = parseFloat(document.getElementById("marginRate").value);
       const failRate = parseFloat(document.getElementById("failRate").value);
+      const ingredientCount = parseFloat(document.getElementById("ingredientCount").value);
+      const fixedCost = parseFloat(document.getElementById("fixedCost").value) || 0; // 기본값 0
 
-      if (isNaN(outputCount) || isNaN(potionPrice) || isNaN(marginRate) || isNaN(failRate)) {
+      if (
+        isNaN(outputCount) || isNaN(potionPrice) || isNaN(marginRate) ||
+        isNaN(failRate) || isNaN(ingredientCount)
+      ) {
         document.getElementById("result").innerText = "모든 값을 올바르게 입력해주세요.";
         return;
       }
 
-      if (failRate < 0 || failRate > 100) {
-        document.getElementById("result").innerText = "실패 확률은 0~100% 사이여야 해요.";
+      if (failRate < 0 || failRate > 100 || ingredientCount <= 0 || outputCount <= 0) {
+        document.getElementById("result").innerText = "입력값이 잘못되었습니다. (실패 확률은 0~100, 나머지는 1 이상)";
         return;
       }
 
       const successRate = 1 - (failRate / 100);
       const expectedRevenue = potionPrice * outputCount * successRate;
-      const maxCost = expectedRevenue / (1 + marginRate / 100);
+
+      // 고정비용 포함한 최대 원재료 총비용
+      const maxTotalIngredientCost = (expectedRevenue - fixedCost) / (1 + marginRate / 100);
+      const maxUnitPrice = maxTotalIngredientCost / ingredientCount;
 
       document.getElementById("result").innerText = 
-        `✅ 성공 확률 ${Math.round(successRate * 100)}% 기준으로,\n💰 원재료 비용이 ${Math.floor(maxCost).toLocaleString()} 메소 이하이면 이득이에요!`;
+        `✅ 성공 확률 ${Math.round(successRate * 100)}% 기준\n💰 원재료 1개당 가격이 ${Math.floor(maxUnitPrice).toLocaleString()} 메소 이하이면 이득이에요!`;
 
-      drawChart(expectedRevenue, maxCost);
+      drawChart(expectedRevenue, ingredientCount, maxUnitPrice, fixedCost);
     }
 
-    function drawChart(expectedRevenue, maxCost) {
-      const costs = [];
+    function drawChart(expectedRevenue, ingredientCount, maxUnitPrice, fixedCost) {
+      const unitPrices = [];
       const profits = [];
       const colors = [];
 
-      for (let cost = 0; cost <= expectedRevenue * 1.5; cost += 1000) {
-        costs.push(cost);
-        const profit = expectedRevenue - cost;
+      for (let price = 0; price <= maxUnitPrice * 2; price += 100) {
+        unitPrices.push(price);
+        const totalCost = price * ingredientCount + fixedCost;
+        const profit = expectedRevenue - totalCost;
         profits.push(profit);
-        colors.push(cost <= maxCost ? 'rgba(0, 200, 0, 0.5)' : 'rgba(200, 0, 0, 0.5)');
+        colors.push(price <= maxUnitPrice ? 'rgba(0, 200, 0, 0.5)' : 'rgba(200, 0, 0, 0.5)');
       }
 
-      if (chart) chart?.destroy(); // 기존 차트 제거
+      if (chart) chart.destroy();
 
       const ctx = document.getElementById('profitChart').getContext('2d');
       chart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: costs.map(c => c.toLocaleString()),
+          labels: unitPrices.map(p => p.toLocaleString()),
           datasets: [{
             label: '예상 순이익',
             data: profits,
@@ -98,7 +115,7 @@
           },
           scales: {
             x: {
-              title: { display: true, text: '원재료 총 비용 (메소)' }
+              title: { display: true, text: '원재료 1개당 가격 (메소)' }
             },
             y: {
               title: { display: true, text: '예상 순이익 (메소)' },
