@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>포션 제작 이득 계산기</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <h1>🧪 포션 제작 이득 계산기</h1>
@@ -24,7 +25,11 @@
 
   <h2 id="result"></h2>
 
+  <canvas id="profitChart" width="400" height="200"></canvas>
+
   <script>
+    let chart;
+
     function calculate() {
       const outputCount = parseFloat(document.getElementById("outputCount").value);
       const potionPrice = parseFloat(document.getElementById("potionPrice").value);
@@ -40,6 +45,57 @@
 
       document.getElementById("result").innerText = 
         `💰 원재료 비용이 ${Math.floor(maxCost).toLocaleString()} 메소 이하이면 이득이에요!`;
+
+      drawChart(totalSellValue, maxCost);
+    }
+
+    function drawChart(totalSellValue, maxCost) {
+      const costs = [];
+      const profits = [];
+      const colors = [];
+
+      for (let cost = 0; cost <= totalSellValue * 1.2; cost += 1000) {
+        costs.push(cost);
+        const profit = totalSellValue - cost;
+        profits.push(profit);
+        colors.push(cost <= maxCost ? 'rgba(0, 200, 0, 0.5)' : 'rgba(200, 0, 0, 0.5)');
+      }
+
+      if (chart) chart.destroy(); // 이전 차트 제거
+
+      const ctx = document.getElementById('profitChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: costs.map(c => c.toLocaleString()),
+          datasets: [{
+            label: '손익',
+            data: profits,
+            backgroundColor: colors,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `이익: ${ctx.raw.toLocaleString()} 메소`
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: '원재료 총 비용 (메소)' }
+            },
+            y: {
+              title: { display: true, text: '순이익 (메소)' },
+              beginAtZero: true
+            }
+          }
+        }
+      });
     }
   </script>
 </body>
