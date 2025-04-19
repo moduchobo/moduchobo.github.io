@@ -40,23 +40,24 @@
         return;
       }
 
-      const totalSellValue = potionPrice * outputCount;
-      const maxCost = totalSellValue / (1 + marginRate / 100);
+      const successRate = 0.9;
+      const expectedRevenue = potionPrice * outputCount * successRate;
+      const maxCost = expectedRevenue / (1 + marginRate / 100);
 
       document.getElementById("result").innerText = 
-        `💰 원재료 비용이 ${Math.floor(maxCost).toLocaleString()} 메소 이하이면 이득이에요!`;
+        `💰 원재료 비용이 ${Math.floor(maxCost).toLocaleString()} 메소 이하이면 (성공 확률 90% 기준) 이득이에요!`;
 
-      drawChart(totalSellValue, maxCost);
+      drawChart(expectedRevenue, maxCost);
     }
 
-    function drawChart(totalSellValue, maxCost) {
+    function drawChart(expectedRevenue, maxCost) {
       const costs = [];
       const profits = [];
       const colors = [];
 
-      for (let cost = 0; cost <= totalSellValue * 1.2; cost += 1000) {
+      for (let cost = 0; cost <= expectedRevenue * 1.5; cost += 1000) {
         costs.push(cost);
-        const profit = totalSellValue - cost;
+        const profit = expectedRevenue - cost;
         profits.push(profit);
         colors.push(cost <= maxCost ? 'rgba(0, 200, 0, 0.5)' : 'rgba(200, 0, 0, 0.5)');
       }
@@ -69,7 +70,7 @@
         data: {
           labels: costs.map(c => c.toLocaleString()),
           datasets: [{
-            label: '손익',
+            label: '예상 순이익 (성공 확률 90%)',
             data: profits,
             backgroundColor: colors,
             borderWidth: 1
@@ -81,7 +82,7 @@
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: ctx => `이익: ${ctx.raw.toLocaleString()} 메소`
+                label: ctx => `예상 이익: ${ctx.raw.toLocaleString()} 메소`
               }
             }
           },
@@ -90,7 +91,7 @@
               title: { display: true, text: '원재료 총 비용 (메소)' }
             },
             y: {
-              title: { display: true, text: '순이익 (메소)' },
+              title: { display: true, text: '예상 순이익 (메소)' },
               beginAtZero: true
             }
           }
