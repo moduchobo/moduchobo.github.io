@@ -48,7 +48,7 @@
       const marginRate = parseFloat(document.getElementById("marginRate").value);
       const failRate = parseFloat(document.getElementById("failRate").value);
       const ingredientCount = parseFloat(document.getElementById("ingredientCount").value);
-      const fixedCost = parseFloat(document.getElementById("fixedCost").value) || 0; // 기본값 0
+      const fixedCost = parseFloat(document.getElementById("fixedCost").value) || 0;
 
       if (
         isNaN(outputCount) || isNaN(potionPrice) || isNaN(marginRate) ||
@@ -64,14 +64,16 @@
       }
 
       const successRate = 1 - (failRate / 100);
-      const expectedRevenue = potionPrice * outputCount * successRate;
+      const auctionFeeRate = 0.05;
+      const netPotionPrice = potionPrice * (1 - auctionFeeRate); // 실수령가
 
-      // 고정비용 포함한 최대 원재료 총비용
+      const expectedRevenue = netPotionPrice * outputCount * successRate;
+
       const maxTotalIngredientCost = (expectedRevenue - fixedCost) / (1 + marginRate / 100);
       const maxUnitPrice = maxTotalIngredientCost / ingredientCount;
 
       document.getElementById("result").innerText = 
-        `✅ 성공 확률 ${Math.round(successRate * 100)}% 기준\n💰 원재료 1개당 가격이 ${Math.floor(maxUnitPrice).toLocaleString()} 메소 이하이면 이득이에요!`;
+        `✅ 성공 확률 ${Math.round(successRate * 100)}% 기준, 경매장 수수료 5% 반영됨\n💰 원재료 1개당 가격이 ${Math.floor(maxUnitPrice).toLocaleString()} 메소 이하이면 이득이에요!`;
 
       drawChart(expectedRevenue, ingredientCount, maxUnitPrice, fixedCost);
     }
