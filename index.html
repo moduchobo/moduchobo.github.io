@@ -70,7 +70,7 @@
         isNaN(outputCount) || isNaN(potionPrice) || isNaN(marginRate) ||
         isNaN(failRate) || isNaN(ingredientCount)
       ) {
-        document.getElementById("potionResult").innerText = "모든 값을 입력해주세요.";
+        document.getElementById("potionResult").innerText = "모든 값을 올바르게 입력해주세요.";
         return;
       }
 
@@ -83,7 +83,7 @@
       const maxUnitPrice = maxTotalIngredientCost / ingredientCount;
 
       document.getElementById("potionResult").innerText = 
-        `✅ 성공 확률 ${Math.round(successRate * 100)}% 기준, 경매장 수수료 5% 반영\n💰 원재료 1개당 ${Math.floor(maxUnitPrice).toLocaleString()} 메소 이하이면 이득입니다.`;
+        `✅ 성공 확률 ${Math.round(successRate * 100)}% 기준, 경매장 수수료 5% 반영\n💰 원재료 1개당 가격이 ${Math.floor(maxUnitPrice).toLocaleString()} 메소 이하이면 이득입니다.`;
 
       drawPotionChart(expectedRevenue, ingredientCount, maxUnitPrice, fixedCost);
     }
@@ -93,7 +93,7 @@
       const profits = [];
       const colors = [];
 
-      for (let price = 0; price <= maxUnitPrice * 2; price += 100) {
+      for (let price = 0; price <= maxUnitPrice * 2; price += Math.max(100, Math.floor(maxUnitPrice / 30))) {
         unitPrices.push(price);
         const totalCost = price * ingredientCount + fixedCost;
         const profit = expectedRevenue - totalCost;
@@ -117,10 +117,31 @@
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `예상 이익: ${ctx.raw.toLocaleString()} 메소`
+              }
+            }
+          },
           scales: {
-            x: { title: { display: true, text: '원재료 1개당 가격 (메소)' }},
-            y: { title: { display: true, text: '예상 순이익 (메소)' }, beginAtZero: true }
+            x: {
+              title: { display: true, text: '원재료 1개당 가격 (메소)' }
+            },
+            y: {
+              title: { display: true, text: '예상 순이익 (메소)' },
+              beginAtZero: true,
+              suggestedMin: null,
+              suggestedMax: null,
+              ticks: {
+                callback: function(value) {
+                  if (value >= 1e8) return (value / 1e8).toFixed(1) + '억';
+                  if (value >= 1e4) return (value / 1e4).toFixed(0) + '만';
+                  return value.toLocaleString();
+                }
+              }
+            }
           }
         }
       });
@@ -134,7 +155,7 @@
         return;
       }
 
-      const netSellPrice = sellPrice * 0.95; // 경매장 수수료 반영
+      const netSellPrice = sellPrice * 0.95;
       document.getElementById("auctionResult").innerText = 
         `✅ ${sellPrice.toLocaleString()}메소에 팔 경우\n💰 최대 구매가는 ${Math.floor(netSellPrice).toLocaleString()}메소입니다.`;
 
@@ -169,10 +190,31 @@
         },
         options: {
           responsive: true,
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `예상 이익: ${ctx.raw.toLocaleString()} 메소`
+              }
+            }
+          },
           scales: {
-            x: { title: { display: true, text: '구매 가격 (메소)' }},
-            y: { title: { display: true, text: '예상 순이익 (메소)' }, beginAtZero: true }
+            x: {
+              title: { display: true, text: '구매 가격 (메소)' }
+            },
+            y: {
+              title: { display: true, text: '예상 순이익 (메소)' },
+              beginAtZero: true,
+              suggestedMin: null,
+              suggestedMax: null,
+              ticks: {
+                callback: function(value) {
+                  if (value >= 1e8) return (value / 1e8).toFixed(1) + '억';
+                  if (value >= 1e4) return (value / 1e4).toFixed(0) + '만';
+                  return value.toLocaleString();
+                }
+              }
+            }
           }
         }
       });
