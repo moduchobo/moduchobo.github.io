@@ -5,54 +5,69 @@
   <title>메이플스토리 경매장 계산기</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Noto Sans KR', sans-serif; padding: 20px; }
+    label { display: block; margin-top: 10px; }
+    input { width: 150px; margin-left: 5px; }
+  </style>
 </head>
 <body>
   <h1>🧪 메이플스토리 경매장 계산기</h1>
 
+  <!-- 1. 포션 제작 이득 계산기 -->
   <h2>1. 포션 제작 이득 계산기</h2>
 
   <label>포션 1회 제작 시 나오는 포션 개수:
     <input type="number" id="outputCount" placeholder="예: 10">
-  </label><br><br>
-
+  </label>
   <label>포션 1개당 평균 판매 가격:
     <input type="number" id="potionPrice" placeholder="예: 3000">
-  </label><br><br>
-
+  </label>
   <label>목표 마진율 (%) :
     <input type="number" id="marginRate" placeholder="예: 20">
-  </label><br><br>
-
+  </label>
   <label>실패 확률 (%) :
-    <input type="number" id="failRate" placeholder="예: 10 (0~100)">
-  </label><br><br>
-
+    <input type="number" id="failRate" placeholder="예: 10">
+  </label>
   <label>원재료 개수:
     <input type="number" id="ingredientCount" placeholder="예: 5">
-  </label><br><br>
-
-  <label>1회 제작 시 고정비용 (선택):
-    <input type="number" id="fixedCost" placeholder="예: 2000 (없으면 0)">
-  </label><br><br>
-
+  </label>
+  <label>1회 제작 시 고정비용:
+    <input type="number" id="fixedCost" placeholder="예: 2000">
+  </label>
   <button onclick="calculatePotion()">포션 제작 이득 계산</button>
-
   <h2 id="potionResult"></h2>
-
   <canvas id="potionChart" width="400" height="200"></canvas>
 
   <hr>
 
-  <h2>2. 경매장 매매 수익 계산기</h2>
+  <!-- 2. 재료비 기반 최소 판매가 계산기 -->
+  <h2>2. 재료비 기반 최소 판매가 계산기</h2>
 
+  <div id="ingredients">
+    <label>재료 1: 가격 <input type="number" class="price"> 개수 <input type="number" class="count"></label>
+    <label>재료 2: 가격 <input type="number" class="price"> 개수 <input type="number" class="count"></label>
+    <label>재료 3: 가격 <input type="number" class="price"> 개수 <input type="number" class="count"></label>
+    <label>재료 4: 가격 <input type="number" class="price"> 개수 <input type="number" class="count"></label>
+    <label>재료 5: 가격 <input type="number" class="price"> 개수 <input type="number" class="count"></label>
+    <label>재료 6: 가격 <input type="number" class="price"> 개수 <input type="number" class="count"></label>
+  </div>
+
+  <label>제작 결과로 나온 아이템 수:
+    <input type="number" id="outputCount2" placeholder="예: 10">
+  </label>
+  <button onclick="calculateUnitSellPrice()">1개당 최소 판매가 계산</button>
+  <h2 id="resultUnitPrice"></h2>
+
+  <hr>
+
+  <!-- 3. 경매장 매매 수익 계산기 -->
+  <h2>3. 경매장 매매 수익 계산기</h2>
   <label>목표 판매가:
     <input type="number" id="targetSellPrice" placeholder="예: 70000">
-  </label><br><br>
-
+  </label>
   <button onclick="calculateAuction()">최대 구매가 계산</button>
-
   <h2 id="auctionResult"></h2>
-
   <canvas id="auctionChart" width="400" height="200"></canvas>
 
   <script>
@@ -66,156 +81,83 @@
       const ingredientCount = parseFloat(document.getElementById("ingredientCount").value);
       const fixedCost = parseFloat(document.getElementById("fixedCost").value) || 0;
 
-      if (
-        isNaN(outputCount) || isNaN(potionPrice) || isNaN(marginRate) ||
-        isNaN(failRate) || isNaN(ingredientCount)
-      ) {
-        document.getElementById("potionResult").innerText = "모든 값을 올바르게 입력해주세요.";
-        return;
-      }
-
       const successRate = 1 - (failRate / 100);
-      const auctionFeeRate = 0.05;
-      const netPotionPrice = potionPrice * (1 - auctionFeeRate);
+      const netPotionPrice = potionPrice * 0.95;
       const expectedRevenue = netPotionPrice * outputCount * successRate;
-
       const maxTotalIngredientCost = (expectedRevenue - fixedCost) / (1 + marginRate / 100);
       const maxUnitPrice = maxTotalIngredientCost / ingredientCount;
 
-      document.getElementById("potionResult").innerText = 
+      document.getElementById("potionResult").innerText =
         `✅ 성공 확률 ${Math.round(successRate * 100)}% 기준, 경매장 수수료 5% 반영\n💰 원재료 1개당 가격이 ${Math.floor(maxUnitPrice).toLocaleString()} 메소 이하이면 이득입니다.`;
 
       drawPotionChart(expectedRevenue, ingredientCount, maxUnitPrice, fixedCost);
     }
 
     function drawPotionChart(expectedRevenue, ingredientCount, maxUnitPrice, fixedCost) {
-      const unitPrices = [];
-      const profits = [];
-      const colors = [];
-
+      const unitPrices = [], profits = [], colors = [];
       for (let price = 0; price <= maxUnitPrice * 2; price += Math.max(100, Math.floor(maxUnitPrice / 30))) {
         unitPrices.push(price);
-        const totalCost = price * ingredientCount + fixedCost;
-        const profit = expectedRevenue - totalCost;
+        const profit = expectedRevenue - (price * ingredientCount + fixedCost);
         profits.push(profit);
-        colors.push(price <= maxUnitPrice ? 'rgba(0, 200, 0, 0.5)' : 'rgba(200, 0, 0, 0.5)');
+        colors.push(price <= maxUnitPrice ? 'rgba(0,200,0,0.5)' : 'rgba(200,0,0,0.5)');
       }
-
       if (potionChart) potionChart.destroy();
-
       const ctx = document.getElementById('potionChart').getContext('2d');
       potionChart = new Chart(ctx, {
         type: 'bar',
-        data: {
-          labels: unitPrices.map(p => p.toLocaleString()),
-          datasets: [{
-            label: '예상 순이익',
-            data: profits,
-            backgroundColor: colors,
-            borderWidth: 1
-          }]
-        },
+        data: { labels: unitPrices.map(p => p.toLocaleString()), datasets: [{ data: profits, backgroundColor: colors }] },
         options: {
           responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: ctx => `예상 이익: ${ctx.raw.toLocaleString()} 메소`
-              }
-            }
-          },
-          scales: {
-            x: {
-              title: { display: true, text: '원재료 1개당 가격 (메소)' }
-            },
-            y: {
-              title: { display: true, text: '예상 순이익 (메소)' },
-              beginAtZero: true,
-              suggestedMin: null,
-              suggestedMax: null,
-              ticks: {
-                callback: function(value) {
-                  if (value >= 1e8) return (value / 1e8).toFixed(1) + '억';
-                  if (value >= 1e4) return (value / 1e4).toFixed(0) + '만';
-                  return value.toLocaleString();
-                }
-              }
-            }
-          }
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `예상 이익: ${ctx.raw.toLocaleString()} 메소` } } },
+          scales: { y: { beginAtZero: true, ticks: { callback: val => val >= 1e8 ? (val / 1e8).toFixed(1) + '억' : val >= 1e4 ? (val / 1e4).toFixed(0) + '만' : val.toLocaleString() } } }
         }
       });
     }
 
+    function calculateUnitSellPrice() {
+      const prices = document.querySelectorAll('.price');
+      const counts = document.querySelectorAll('.count');
+      const outputCount = parseFloat(document.getElementById("outputCount2").value);
+      let totalCost = 0;
+      for (let i = 0; i < 6; i++) {
+        const p = parseFloat(prices[i].value), c = parseFloat(counts[i].value);
+        if (!isNaN(p) && !isNaN(c)) totalCost += p * c;
+      }
+      if (!outputCount || outputCount <= 0) {
+        document.getElementById("resultUnitPrice").innerText = "제작 결과 개수를 입력해주세요.";
+        return;
+      }
+      const price = totalCost / outputCount / 0.95;
+      document.getElementById("resultUnitPrice").innerText =
+        `✅ 손해를 보지 않으려면 1개당 최소 ${Math.ceil(price).toLocaleString()} 메소에 판매해야 합니다.`;
+    }
+
     function calculateAuction() {
       const sellPrice = parseFloat(document.getElementById("targetSellPrice").value);
-
-      if (isNaN(sellPrice) || sellPrice <= 0) {
+      if (!sellPrice || sellPrice <= 0) {
         document.getElementById("auctionResult").innerText = "판매가를 올바르게 입력해주세요.";
         return;
       }
-
       const netSellPrice = sellPrice * 0.95;
-      document.getElementById("auctionResult").innerText = 
+      document.getElementById("auctionResult").innerText =
         `✅ ${sellPrice.toLocaleString()}메소에 팔 경우\n💰 최대 구매가는 ${Math.floor(netSellPrice).toLocaleString()}메소입니다.`;
 
-      drawAuctionChart(netSellPrice);
-    }
-
-    function drawAuctionChart(netSellPrice) {
-      const buyPrices = [];
-      const profits = [];
-      const colors = [];
-
+      const buyPrices = [], profits = [], colors = [];
       for (let buy = 0; buy <= netSellPrice * 1.5; buy += 1000) {
         buyPrices.push(buy);
         const profit = netSellPrice - buy;
         profits.push(profit);
-        colors.push(profit >= 0 ? 'rgba(0, 200, 0, 0.5)' : 'rgba(200, 0, 0, 0.5)');
+        colors.push(profit >= 0 ? 'rgba(0,200,0,0.5)' : 'rgba(200,0,0,0.5)');
       }
-
       if (auctionChart) auctionChart.destroy();
-
       const ctx = document.getElementById('auctionChart').getContext('2d');
       auctionChart = new Chart(ctx, {
         type: 'bar',
-        data: {
-          labels: buyPrices.map(p => p.toLocaleString()),
-          datasets: [{
-            label: '예상 순이익',
-            data: profits,
-            backgroundColor: colors,
-            borderWidth: 1
-          }]
-        },
+        data: { labels: buyPrices.map(p => p.toLocaleString()), datasets: [{ data: profits, backgroundColor: colors }] },
         options: {
           responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: ctx => `예상 이익: ${ctx.raw.toLocaleString()} 메소`
-              }
-            }
-          },
-          scales: {
-            x: {
-              title: { display: true, text: '구매 가격 (메소)' }
-            },
-            y: {
-              title: { display: true, text: '예상 순이익 (메소)' },
-              beginAtZero: true,
-              suggestedMin: null,
-              suggestedMax: null,
-              ticks: {
-                callback: function(value) {
-                  if (value >= 1e8) return (value / 1e8).toFixed(1) + '억';
-                  if (value >= 1e4) return (value / 1e4).toFixed(0) + '만';
-                  return value.toLocaleString();
-                }
-              }
-            }
-          }
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `예상 이익: ${ctx.raw.toLocaleString()} 메소` } } },
+          scales: { y: { beginAtZero: true, ticks: { callback: val => val >= 1e8 ? (val / 1e8).toFixed(1) + '억' : val >= 1e4 ? (val / 1e4).toFixed(0) + '만' : val.toLocaleString() } } }
         }
       });
     }
